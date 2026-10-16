@@ -36,7 +36,7 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        /* KHUNG KÉO THẢ ÁNH (DRAG AND DROP) */
+        /* KHUNG KÉO THẢ ẢNH (DRAG AND DROP) */
         .dropzone-box {
             border: 2px dashed #cbd5e1;
             border-radius: 10px;
@@ -142,12 +142,12 @@
     <!-- DASHBOARD CONTENT GRID -->
     <div class="row g-4">
         
-        <!-- CỘT TRÁI: DỮ LIỆU ĐẦU VÀO & XEM TRƯỚC (KÉO THẢ ÁNH) -->
+        <!-- CỘT TRÁI: DỮ LIỆU ĐẦU VÀO & XEM TRƯỚC -->
         <div class="col-lg-5">
             <div class="dashboard-card p-4 h-100">
                 <h5 class="fw-bold mb-3"><i class="fa-solid fa-cloud-arrow-up me-2 text-primary"></i>Tải Ảnh Dữ Liệu</h5>
                 
-                <!-- DROPZONE INPUT (HỖ TRỢ KÉO THẢ) -->
+                <!-- DROPZONE INPUT -->
                 <div class="dropzone-box mb-3" id="dropzone" onclick="document.getElementById('imageInput').click()">
                     <i class="fa-solid fa-file-circle-plus fs-1 text-primary mb-2"></i>
                     <p class="mb-1 fw-semibold text-dark">Kéo & thả ảnh vào đây</p>
@@ -172,7 +172,7 @@
             </div>
         </div>
 
-        <!-- CỘT PHẢI: KẾT QUẢ DỰ ĐOÁN & BIỂU ĐỒ -->
+        <!-- CỘT PHẢI: KẾT QUẢ DỰ ĐOÁN & PHẢN HỒI -->
         <div class="col-lg-7">
             <div class="dashboard-card p-4 h-100">
                 <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Kết Quả Phân Tích AI</h5>
@@ -194,6 +194,23 @@
                         <div class="progress progress-thin">
                             <div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
                         </div>
+                    </div>
+
+                    <!-- NÚT PHẢN HỒI ĐÚNG / SAI (YÊU CẦU CỦA BTC) -->
+                    <div id="feedbackContainer" class="mt-3 pt-3 border-top d-flex align-items-center justify-content-between" style="display: none;">
+                        <span class="small text-muted fw-semibold"><i class="fa-solid fa-comment-dots me-1"></i> Đánh giá kết quả AI:</span>
+                        <div>
+                            <button class="btn btn-success btn-sm me-2" onclick="sendFeedback('correct')">
+                                <i class="fa-solid fa-check me-1"></i> Đúng
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="sendFeedback('incorrect')">
+                                <i class="fa-solid fa-xmark me-1"></i> Sai
+                            </button>
+                        </div>
+                    </div>
+                    <!-- THÔNG BÁO KHI ĐÃ GỬI FEEDBACK -->
+                    <div id="feedbackThanks" class="mt-2 text-success small fw-semibold" style="display: none;">
+                        <i class="fa-solid fa-circle-check me-1"></i> Cảm ơn bạn đã đóng góp phản hồi!
                     </div>
                 </div>
 
@@ -229,26 +246,16 @@
             </div>
             <div class="modal-body p-4">
                 <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-bullseye me-2"></i>Mục tiêu ứng dụng</h6>
-                <p class="text-muted">StudyCheck AI là giải pháp hỗ trợ phát hiện tư thế ngồi học (ngồi đúng / ngồi sai) nhằm giảm thiểu nguy cơ cong quẹo cột sống và cận thị ở học sinh thông qua xử lý hình ảnh thị giác máy tính.</p>
+                <p class="text-muted">StudyCheck AI hỗ trợ phát hiện tư thế ngồi học để giảm thiểu nguy cơ cong vẹo cột sống và cận thị ở học sinh, tích hợp cơ chế cảnh báo chưa chắc chắn và thu thập phản hồi từ người dùng.</p>
 
                 <hr class="my-3">
 
                 <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-microchip me-2"></i>Công nghệ sử dụng</h6>
                 <ul class="text-muted mb-3">
-                    <li><strong>Mô hình AI:</strong> ResNet50 (Deep Residual Learning) đạt độ chính xác 92.04% trên tập test.</li>
-                    <li><strong>Bộ dữ liệu:</strong> Dữ liệu được huấn luyện và chuẩn hóa trên nền tảng Roboflow.</li>
-                    <li><strong>Backend:</strong> Python, TensorFlow / Keras, Flask API.</li>
+                    <li><strong>Mô hình AI:</strong> ResNet50 đạt độ chính xác 92.04% trên tập test.</li>
+                    <li><strong>Backend:</strong> Python, TensorFlow, Flask API (Hỗ trợ lưu Hard Cases).</li>
                     <li><strong>Frontend:</strong> HTML5, Bootstrap 5, Chart.js Dashboard.</li>
                 </ul>
-
-                <hr class="my-3">
-
-                <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-list-check me-2"></i>Hướng dẫn sử dụng</h6>
-                <ol class="text-muted mb-0">
-                    <li>Kéo thả ảnh tư thế ngồi hoặc nhấp vào ô <strong>Tải Ảnh Dữ Liệu</strong>.</li>
-                    <li>Hệ thống sẽ tự động chuyển đổi kích thước và truyền dữ liệu tới mô hình ResNet50.</li>
-                    <li>Xem tư thế nhận diện chính và biểu đồ phân bổ xác suất độ tin cậy.</li>
-                </ol>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
@@ -276,11 +283,17 @@
     const resultConfidence = document.getElementById('resultConfidence');
     const confidenceBar = document.getElementById('confidenceBar');
     
+    const feedbackContainer = document.getElementById('feedbackContainer');
+    const feedbackThanks = document.getElementById('feedbackThanks');
+    
     const noDataPlaceholder = document.getElementById('noDataPlaceholder');
     const chartContainer = document.getElementById('chartContainer');
     const resetBtn = document.getElementById('resetBtn');
 
     let probabilityChart = null;
+    let currentFile = null;
+    let currentRawLabel = "";
+    let currentConfidence = 0;
 
     // --- SỰ KIỆN KÉO THẢ (DRAG & DROP) ---
     ['dragenter', 'dragover'].forEach(eventName => {
@@ -315,6 +328,7 @@
 
     function handleFileSelect(file) {
         resetUI();
+        currentFile = file;
 
         if (!file.type.startsWith('image/')) {
             showError('Tệp được chọn không phải là hình ảnh hợp lệ!');
@@ -322,7 +336,6 @@
             return;
         }
 
-        // Preview ảnh
         const reader = new FileReader();
         reader.onload = function(evt) {
             imagePreview.src = evt.target.result;
@@ -332,12 +345,12 @@
         }
         reader.readAsDataURL(file);
 
-        // Gửi tới Flask Backend
         uploadAndPredict(file);
     }
 
     resetBtn.addEventListener('click', function() {
         imageInput.value = '';
+        currentFile = null;
         resetUI();
     });
 
@@ -345,6 +358,7 @@
         errorAlert.style.display = 'none';
         resultSummary.style.display = 'none';
         chartContainer.style.display = 'none';
+        feedbackThanks.style.display = 'none';
         noDataPlaceholder.style.display = 'block';
         imagePreview.style.display = 'none';
         placeholderText.style.display = 'inline';
@@ -383,21 +397,29 @@
             if (data.success) {
                 updateStatus('Completed', 'bg-success', 'fa-circle-check', 'Phân tích thành công!');
                 
+                currentRawLabel = data.label_raw;
+                currentConfidence = data.confidence;
+
                 resultLabel.innerText = data.label_friendly;
                 resultRawLabel.innerText = data.label_raw;
                 resultConfidence.innerText = `${data.confidence}%`;
                 confidenceBar.style.width = `${data.confidence}%`;
 
-                if (data.confidence < 50) {
-                    confidenceBar.className = 'progress-bar bg-danger';
+                // Xử lý hiển thị cảnh báo khi chưa chắc chắn (dưới ngưỡng 75%)
+                if (data.is_uncertain) {
+                    confidenceBar.className = 'progress-bar bg-warning';
+                    resultLabel.className = 'fw-bold text-danger my-1';
                 } else if (data.confidence < 75) {
                     confidenceBar.className = 'progress-bar bg-warning';
+                    resultLabel.className = 'fw-bold text-warning my-1';
                 } else {
                     confidenceBar.className = 'progress-bar bg-success';
+                    resultLabel.className = 'fw-bold text-primary my-1';
                 }
 
                 noDataPlaceholder.style.display = 'none';
                 resultSummary.style.display = 'block';
+                feedbackContainer.style.display = 'flex';
                 chartContainer.style.display = 'block';
 
                 renderChart(data.all_predictions);
@@ -409,11 +431,35 @@
         .catch(err => {
             console.error(err);
             updateStatus('Error', 'bg-danger', 'fa-circle-xmark', 'Đã xảy ra lỗi trong quá trình phân tích.');
-            if (err.message.includes('Failed to fetch')) {
-                showError('Không thể kết nối đến Backend Flask server (Mã kết nối bị ngắt).');
+            showError(err.message);
+        });
+    }
+
+    function sendFeedback(feedbackType) {
+        if (!currentFile) return;
+
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('feedback', feedbackType);
+        formData.append('label_raw', currentRawLabel);
+        formData.append('confidence', currentConfidence);
+
+        fetch('/feedback', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                feedbackContainer.style.display = 'none';
+                feedbackThanks.style.display = 'block';
             } else {
-                showError(err.message);
+                alert('Lỗi khi gửi phản hồi: ' + data.error);
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Không thể kết nối đến server để gửi phản hồi!');
         });
     }
 
