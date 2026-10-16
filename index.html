@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCheck AI - Dashboard Nhận Diện Tư Thế Ngồi Học</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-canvas: #f8f9fa;
+            --card-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+            --primary-accent: #2563eb;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #334155;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .dashboard-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            background: #ffffff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* KHUNG KÉO THẢ ÁNH (DRAG AND DROP) */
+        .dropzone-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .dropzone-box:hover, .dropzone-box.dragover {
+            border-color: var(--primary-accent);
+            background: #eff6ff;
+            transform: scale(1.01);
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 280px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .metric-badge {
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .progress-thin {
+            height: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR HEADER -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm px-3">
+    <div class="container-fluid">
+        <a class="navbar-brand text-primary d-flex align-items-center" href="#">
+            <i class="fa-solid fa-brain me-2 fs-4"></i> StudyCheck AI
+        </a>
+        <div class="d-flex align-items-center">
+            <!-- NÚT MỞ TRANG GIỚI THIỆU -->
+            <button class="btn btn-outline-light btn-sm me-3" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                <i class="fa-solid fa-circle-info me-1"></i> Giới Thiệu Dự Án
+            </button>
+            <span class="navbar-text text-light small d-none d-sm-inline">
+                <i class="fa-solid fa-circle-check text-success me-1"></i> Model: ResNet50
+            </span>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN CONTAINER -->
+<div class="container-fluid px-4 pb-5">
+    
+    <!-- SYSTEM STATUS BANNER -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-card p-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 fs-3 text-primary">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Trạng Thái Hệ Thống</h6>
+                        <small id="statusText" class="text-muted">Kéo thả ảnh hoặc chọn tệp từ máy tính...</small>
+                    </div>
+                </div>
+                <div>
+                    <span id="statusBadge" class="badge bg-secondary metric-badge">
+                        <i class="fa-solid fa-clock me-1"></i> Standby
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ERROR ALERT BANNER -->
+    <div id="errorAlert" class="alert alert-danger alert-dismissible fade show mb-4 dashboard-card" style="display: none;" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fa-solid fa-triangle-exclamation fs-4 me-3"></i>
+            <div>
+                <strong class="d-block">Phát hiện lỗi xử lý!</strong>
+                <span id="errorMessage">---</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD CONTENT GRID -->
+    <div class="row g-4">
+        
+        <!-- CỘT TRÁI: DỮ LIỆU ĐẦU VÀO & XEM TRƯỚC (KÉO THẢ ÁNH) -->
+        <div class="col-lg-5">
+            <div class="dashboard-card p-4 h-100">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-cloud-arrow-up me-2 text-primary"></i>Tải Ảnh Dữ Liệu</h5>
+                
+                <!-- DROPZONE INPUT (HỖ TRỢ KÉO THẢ) -->
+                <div class="dropzone-box mb-3" id="dropzone" onclick="document.getElementById('imageInput').click()">
+                    <i class="fa-solid fa-file-circle-plus fs-1 text-primary mb-2"></i>
+                    <p class="mb-1 fw-semibold text-dark">Kéo & thả ảnh vào đây</p>
+                    <small class="text-muted d-block mb-2">hoặc nhấp để chọn tệp từ thiết bị</small>
+                    <span class="badge bg-light text-dark border">JPG, PNG, WEBP</span>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                </div>
+
+                <!-- PREVIEW CONTAINER -->
+                <div class="preview-container mb-3">
+                    <span id="placeholderText" class="text-muted small">
+                        <i class="fa-solid fa-image me-1"></i> Chưa có dữ liệu xem trước
+                    </span>
+                    <img id="imagePreview" src="" alt="Preview" style="display: none;">
+                </div>
+
+                <div class="text-end">
+                    <button class="btn btn-outline-secondary btn-sm" id="resetBtn" style="display: none;">
+                        <i class="fa-solid fa-rotate-left me-1"></i> Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: KẾT QUẢ DỰ ĐOÁN & BIỂU ĐỒ -->
+        <div class="col-lg-7">
+            <div class="dashboard-card p-4 h-100">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Kết Quả Phân Tích AI</h5>
+                
+                <!-- BẢNG TÓM TẮT DỰ ĐOÁN -->
+                <div id="resultSummary" class="p-3 bg-light rounded-3 mb-4" style="display: none;">
+                    <div class="row align-items-center">
+                        <div class="col-md-7 border-end">
+                            <small class="text-uppercase text-muted fw-bold">Tư Thế Nhận Diện Chính</small>
+                            <h4 id="resultLabel" class="fw-bold text-primary my-1">---</h4>
+                            <small class="text-muted">Mã nhãn: <span id="resultRawLabel" class="fw-semibold">---</span></small>
+                        </div>
+                        <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                            <small class="text-uppercase text-muted fw-bold">Độ Tin Cậy (Confidence)</small>
+                            <h2 id="resultConfidence" class="fw-bold text-success mb-0">0%</h2>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="progress progress-thin">
+                            <div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BIỂU ĐỒ XÁC SUẤT BẰNG CHART.JS -->
+                <div id="chartContainer" style="display: none;">
+                    <h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-chart-bar me-2"></i>Phân Bố Xác Suất Chi Tiết:</h6>
+                    <div style="height: 260px; position: relative;">
+                        <canvas id="probabilityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- PLACEHOLDER KHI CHƯA CÓ KẾT QUẢ -->
+                <div id="noDataPlaceholder" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-chart-simple fs-1 mb-3 opacity-50"></i>
+                    <p class="mb-0">Vui lòng kéo thả hoặc chọn ảnh để xem kết quả phân tích AI.</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- TRANG GIỚI THIỆU (MODAL POPUP) -->
+<div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="aboutModalLabel">
+                    <i class="fa-solid fa-brain text-primary me-2"></i>Giới Thiệu Dự Án StudyCheck AI
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-bullseye me-2"></i>Mục tiêu ứng dụng</h6>
+                <p class="text-muted">StudyCheck AI là giải pháp hỗ trợ phát hiện tư thế ngồi học (ngồi đúng / ngồi sai) nhằm giảm thiểu nguy cơ cong quẹo cột sống và cận thị ở học sinh thông qua xử lý hình ảnh thị giác máy tính.</p>
+
+                <hr class="my-3">
+
+                <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-microchip me-2"></i>Công nghệ sử dụng</h6>
+                <ul class="text-muted mb-3">
+                    <li><strong>Mô hình AI:</strong> ResNet50 (Deep Residual Learning) đạt độ chính xác 92.04% trên tập test.</li>
+                    <li><strong>Bộ dữ liệu:</strong> Dữ liệu được huấn luyện và chuẩn hóa trên nền tảng Roboflow.</li>
+                    <li><strong>Backend:</strong> Python, TensorFlow / Keras, Flask API.</li>
+                    <li><strong>Frontend:</strong> HTML5, Bootstrap 5, Chart.js Dashboard.</li>
+                </ul>
+
+                <hr class="my-3">
+
+                <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-list-check me-2"></i>Hướng dẫn sử dụng</h6>
+                <ol class="text-muted mb-0">
+                    <li>Kéo thả ảnh tư thế ngồi hoặc nhấp vào ô <strong>Tải Ảnh Dữ Liệu</strong>.</li>
+                    <li>Hệ thống sẽ tự động chuyển đổi kích thước và truyền dữ liệu tới mô hình ResNet50.</li>
+                    <li>Xem tư thế nhận diện chính và biểu đồ phân bổ xác suất độ tin cậy.</li>
+                </ol>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const placeholderText = document.getElementById('placeholderText');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    const resultSummary = document.getElementById('resultSummary');
+    const resultLabel = document.getElementById('resultLabel');
+    const resultRawLabel = document.getElementById('resultRawLabel');
+    const resultConfidence = document.getElementById('resultConfidence');
+    const confidenceBar = document.getElementById('confidenceBar');
+    
+    const noDataPlaceholder = document.getElementById('noDataPlaceholder');
+    const chartContainer = document.getElementById('chartContainer');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let probabilityChart = null;
+
+    // --- SỰ KIỆN KÉO THẢ (DRAG & DROP) ---
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('dragover');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dragover');
+        }, false);
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    imageInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        resetUI();
+
+        if (!file.type.startsWith('image/')) {
+            showError('Tệp được chọn không phải là hình ảnh hợp lệ!');
+            updateStatus('Lỗi Tệp', 'bg-danger', 'fa-triangle-exclamation');
+            return;
+        }
+
+        // Preview ảnh
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            imagePreview.src = evt.target.result;
+            imagePreview.style.display = 'block';
+            placeholderText.style.display = 'none';
+            resetBtn.style.display = 'inline-block';
+        }
+        reader.readAsDataURL(file);
+
+        // Gửi tới Flask Backend
+        uploadAndPredict(file);
+    }
+
+    resetBtn.addEventListener('click', function() {
+        imageInput.value = '';
+        resetUI();
+    });
+
+    function resetUI() {
+        errorAlert.style.display = 'none';
+        resultSummary.style.display = 'none';
+        chartContainer.style.display = 'none';
+        noDataPlaceholder.style.display = 'block';
+        imagePreview.style.display = 'none';
+        placeholderText.style.display = 'inline';
+        resetBtn.style.display = 'none';
+        updateStatus('Standby', 'bg-secondary', 'fa-clock', 'Kéo thả ảnh hoặc chọn tệp từ máy tính...');
+    }
+
+    function updateStatus(badgeText, bgClass, iconClass, description) {
+        statusBadge.className = `badge ${bgClass} metric-badge`;
+        statusBadge.innerHTML = `<i class="fa-solid ${iconClass} me-1"></i> ${badgeText}`;
+        if (description) statusText.innerText = description;
+    }
+
+    function showError(msg) {
+        errorMessage.innerText = msg;
+        errorAlert.style.display = 'block';
+    }
+
+    function uploadAndPredict(file) {
+        updateStatus('Processing', 'bg-warning text-dark', 'fa-spinner fa-spin', 'Đang xử lý hình ảnh và truyền tới mô hình AI ResNet50...');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/predict', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error || 'Lỗi hệ thống Server'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateStatus('Completed', 'bg-success', 'fa-circle-check', 'Phân tích thành công!');
+                
+                resultLabel.innerText = data.label_friendly;
+                resultRawLabel.innerText = data.label_raw;
+                resultConfidence.innerText = `${data.confidence}%`;
+                confidenceBar.style.width = `${data.confidence}%`;
+
+                if (data.confidence < 50) {
+                    confidenceBar.className = 'progress-bar bg-danger';
+                } else if (data.confidence < 75) {
+                    confidenceBar.className = 'progress-bar bg-warning';
+                } else {
+                    confidenceBar.className = 'progress-bar bg-success';
+                }
+
+                noDataPlaceholder.style.display = 'none';
+                resultSummary.style.display = 'block';
+                chartContainer.style.display = 'block';
+
+                renderChart(data.all_predictions);
+
+            } else {
+                throw new Error(data.error || 'Không nhận được kết quả dự đoán');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            updateStatus('Error', 'bg-danger', 'fa-circle-xmark', 'Đã xảy ra lỗi trong quá trình phân tích.');
+            if (err.message.includes('Failed to fetch')) {
+                showError('Không thể kết nối đến Backend Flask server (Mã kết nối bị ngắt).');
+            } else {
+                showError(err.message);
+            }
+        });
+    }
+
+    function renderChart(predictionsObj) {
+        const labels = Object.keys(predictionsObj);
+        const values = Object.values(predictionsObj);
+
+        const ctx = document.getElementById('probabilityChart').getContext('2d');
+
+        if (probabilityChart) {
+            probabilityChart.destroy();
+        }
+
+        probabilityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Độ tin cậy (%)',
+                    data: values,
+                    backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) { return value + "%"; }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 10 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
