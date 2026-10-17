@@ -9,26 +9,18 @@ from flask_cors import CORS
 app = Flask(__name__, template_folder=".")
 CORS(app)
 
-# 1. Khai báo danh sách 7 nhãn chuẩn từ Roboflow Dataset
+# 1. Khai báo danh sách nhãn chuẩn theo mô hình đã huấn luyện
 CLASS_NAMES = [
-    'Unlabeled',
     'backwardbadposture',
-    'backwardbadposture forwardbadposture',
-    'backwardbadposture goodposture',
     'forwardbadposture',
-    'forwardbadposture goodposture',
     'goodposture'
 ]
 
 # Danh sách tên nhãn hiển thị thân thiện trên UI
 FRIENDLY_NAMES = {
-    'Unlabeled': 'Chưa xác định',
-    'backwardbadposture': 'Ngả lưng ra sau (Tư thế sai)',
-    'backwardbadposture forwardbadposture': 'Sai tư thế tổng hợp (Ngả sau / Cúi tới)',
-    'backwardbadposture goodposture': 'Ngả lưng nhẹ (Gần chuẩn)',
-    'forwardbadposture': 'Cúi đầu / Rướn người về trước (Tư thế sai)',
-    'forwardbadposture goodposture': 'Cúi nhẹ (Gần chuẩn)',
-    'goodposture': 'Tư thế ngồi chuẩn (Ngồi tốt)'
+    'backwardbadposture': 'Ngả ra sau (Sai tư thế)',
+    'forwardbadposture': 'Cúi về trước (Sai tư thế)',
+    'goodposture': 'Tư thế ngồi chuẩn (Ngồi đúng)'
 }
 
 MODEL_PATH = "ResNet50_model.keras"
@@ -91,13 +83,13 @@ def predict():
         raw_label = CLASS_NAMES[top_idx] if top_idx < len(CLASS_NAMES) else f"Class {top_idx}"
         friendly_label = FRIENDLY_NAMES.get(raw_label, raw_label)
 
-        # Kiểm tra ngưỡng tin cậy theo yêu cầu BTC
+        # Kiểm tra ngưỡng tin cậy theo yêu cầu
         if confidence < CONFIDENCE_THRESHOLD:
             return jsonify({
                 'success': True,
                 'is_uncertain': True,
                 'label_raw': raw_label,
-                'label_friendly': "Chưa chắc chắn - hãy chụp lại rõ hơn, thấy cả lưng và đầu",
+                'label_friendly': "Chưa chắc chắn - hãy điều chỉnh góc camera thấy rõ lưng và đầu",
                 'confidence': round(confidence, 2),
                 'all_predictions': {
                     FRIENDLY_NAMES.get(CLASS_NAMES[i], CLASS_NAMES[i]): round(float(predictions[i]) * 100.0, 2)
@@ -105,7 +97,6 @@ def predict():
                 }
             })
 
-        # Trả về kết quả dự đoán chi tiết khi đủ độ tin cậy
         return jsonify({
             'success': True,
             'is_uncertain': False,
@@ -136,14 +127,11 @@ def feedback():
             
         file = request.files['file']
         
-        # Đặt tên file dựa trên thời gian và kết quả đánh giá
         timestamp = int(time.time())
         filename = f"{timestamp}_{user_feedback}_{predicted_label}.jpg"
         filename = filename.replace(" ", "_")
         
         file_path = os.path.join(HARD_CASES_DIR, filename)
-        
-        # Lưu file ảnh lại vào thư mục hard_cases
         file.seek(0)
         file.save(file_path)
         

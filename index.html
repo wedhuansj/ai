@@ -36,11 +36,10 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        /* KHUNG KÉO THẢ ẢNH (DRAG AND DROP) */
         .dropzone-box {
             border: 2px dashed #cbd5e1;
             border-radius: 10px;
-            padding: 2.5rem 1rem;
+            padding: 2rem 1rem;
             text-align: center;
             background: #f8fafc;
             cursor: pointer;
@@ -55,19 +54,22 @@
 
         .preview-container {
             width: 100%;
-            height: 280px;
+            height: 260px;
             border-radius: 8px;
             overflow: hidden;
             background: #0f172a;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
 
-        .preview-container img {
+        .preview-container img, .preview-container video {
             max-width: 100%;
             max-height: 100%;
-            object-fit: contain;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
         }
 
         .metric-badge {
@@ -92,7 +94,6 @@
             <i class="fa-solid fa-brain me-2 fs-4"></i> StudyCheck AI
         </a>
         <div class="d-flex align-items-center">
-            <!-- NÚT MỞ TRANG GIỚI THIỆU -->
             <button class="btn btn-outline-light btn-sm me-3" data-bs-toggle="modal" data-bs-target="#aboutModal">
                 <i class="fa-solid fa-circle-info me-1"></i> Giới Thiệu Dự Án
             </button>
@@ -116,7 +117,7 @@
                     </div>
                     <div>
                         <h6 class="mb-0 fw-bold">Trạng Thái Hệ Thống</h6>
-                        <small id="statusText" class="text-muted">Kéo thả ảnh hoặc chọn tệp từ máy tính...</small>
+                        <small id="statusText" class="text-muted">Kéo thả ảnh hoặc bật chế độ giám sát Webcam...</small>
                     </div>
                 </div>
                 <div>
@@ -142,26 +143,69 @@
     <!-- DASHBOARD CONTENT GRID -->
     <div class="row g-4">
         
-        <!-- CỘT TRÁI: DỮ LIỆU ĐẦU VÀO & XEM TRƯỚC -->
+        <!-- CỘT TRÁI: TẢI ẢNH HOẶC WEBMAC GIÁM SÁT TRỰC TUYẾN -->
         <div class="col-lg-5">
             <div class="dashboard-card p-4 h-100">
-                <h5 class="fw-bold mb-3"><i class="fa-solid fa-cloud-arrow-up me-2 text-primary"></i>Tải Ảnh Dữ Liệu</h5>
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-video me-2 text-primary"></i>Nguồn Dữ Liệu Kiểm Tra</h5>
                 
-                <!-- DROPZONE INPUT -->
-                <div class="dropzone-box mb-3" id="dropzone" onclick="document.getElementById('imageInput').click()">
-                    <i class="fa-solid fa-file-circle-plus fs-1 text-primary mb-2"></i>
-                    <p class="mb-1 fw-semibold text-dark">Kéo & thả ảnh vào đây</p>
-                    <small class="text-muted d-block mb-2">hoặc nhấp để chọn tệp từ thiết bị</small>
-                    <span class="badge bg-light text-dark border">JPG, PNG, WEBP</span>
-                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                <!-- NÚT CHUYỂN ĐỔI CHẾ ĐỘ (TẢI ẢNH / WEBCAM TỰ ĐỘNG) -->
+                <div class="btn-group w-100 mb-3" role="group">
+                    <input type="radio" class="btn-check" name="inputMode" id="modeImage" autocomplete="off" checked onclick="switchMode('image')">
+                    <label class="btn btn-outline-primary btn-sm" for="modeImage"><i class="fa-solid fa-image me-1"></i> Tải Ảnh Lên</label>
+
+                    <input type="radio" class="btn-check" name="inputMode" id="modeWebcam" autocomplete="off" onclick="switchMode('webcam')">
+                    <label class="btn btn-outline-primary btn-sm" for="modeWebcam"><i class="fa-solid fa-camera me-1"></i> Giám Sát Webcam</label>
+                </div>
+
+                <!-- KHU VỰC TẢI ẢNH -->
+                <div id="imageUploadSection">
+                    <div class="dropzone-box mb-3" id="dropzone" onclick="document.getElementById('imageInput').click()">
+                        <i class="fa-solid fa-file-circle-plus fs-1 text-primary mb-2"></i>
+                        <p class="mb-1 fw-semibold text-dark">Kéo & thả ảnh vào đây</p>
+                        <small class="text-muted d-block mb-2">hoặc nhấp để chọn tệp từ thiết bị</small>
+                        <span class="badge bg-light text-dark border">JPG, PNG, WEBP</span>
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- KHU VỰC ĐIỀU KHIỂN WEBCAM THÔNG MINH -->
+                <div id="webcamSection" style="display: none;" class="mb-3">
+                    <div class="p-3 bg-light rounded-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-muted">Thời gian chụp định kỳ:</span>
+                            <select id="intervalSelect" class="form-select form-select-sm w-50">
+                                <option value="2000">Mỗi 2 giây</option>
+                                <option value="5000" selected>Mỗi 5 giây</option>
+                                <option value="10000">Mỗi 10 giây</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small fw-bold text-muted">Cảnh báo sau (lần sai liên tục):</span>
+                            <select id="consecutiveLimitSelect" class="form-select form-select-sm w-50">
+                                <option value="1">Ngay lập tức (1 lần)</option>
+                                <option value="3" selected>Sau 3 lần liên tục (~15s)</option>
+                                <option value="5">Sau 5 lần liên tục (~25s)</option>
+                            </select>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <button id="startWebcamBtn" class="btn btn-success btn-sm w-100 mb-2" onclick="startWebcamMonitoring()">
+                                <i class="fa-solid fa-play me-1"></i> Bắt đầu giám sát tự động
+                            </button>
+                            <button id="stopWebcamBtn" class="btn btn-danger btn-sm w-100" style="display: none;" onclick="stopWebcamMonitoring()">
+                                <i class="fa-solid fa-stop me-1"></i> Dừng giám sát
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- PREVIEW CONTAINER -->
                 <div class="preview-container mb-3">
                     <span id="placeholderText" class="text-muted small">
-                        <i class="fa-solid fa-image me-1"></i> Chưa có dữ liệu xem trước
+                        <i class="fa-solid fa-eye me-1"></i> Khu vực hiển thị khung hình
                     </span>
                     <img id="imagePreview" src="" alt="Preview" style="display: none;">
+                    <video id="webcamVideo" autoplay playsinline style="display: none;"></video>
+                    <canvas id="snapshotCanvas" style="display: none;"></canvas>
                 </div>
 
                 <div class="text-end">
@@ -184,6 +228,9 @@
                             <small class="text-uppercase text-muted fw-bold">Tư Thế Nhận Diện Chính</small>
                             <h4 id="resultLabel" class="fw-bold text-primary my-1">---</h4>
                             <small class="text-muted">Mã nhãn: <span id="resultRawLabel" class="fw-semibold">---</span></small>
+                            <div id="warningCounterBox" class="mt-2 text-danger small fw-bold" style="display: none;">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Cảnh báo: Ngồi sai liên tục (<span id="badCount">0</span> lần)!
+                            </div>
                         </div>
                         <div class="col-md-5 text-md-end mt-3 mt-md-0">
                             <small class="text-uppercase text-muted fw-bold">Độ Tin Cậy (Confidence)</small>
@@ -196,7 +243,7 @@
                         </div>
                     </div>
 
-                    <!-- NÚT PHẢN HỒI ĐÚNG / SAI (YÊU CẦU CỦA BTC) -->
+                    <!-- NÚT PHẢN HỒI ĐÚNG / SAI -->
                     <div id="feedbackContainer" class="mt-3 pt-3 border-top d-flex align-items-center justify-content-between" style="display: none;">
                         <span class="small text-muted fw-semibold"><i class="fa-solid fa-comment-dots me-1"></i> Đánh giá kết quả AI:</span>
                         <div>
@@ -208,7 +255,6 @@
                             </button>
                         </div>
                     </div>
-                    <!-- THÔNG BÁO KHI ĐÃ GỬI FEEDBACK -->
                     <div id="feedbackThanks" class="mt-2 text-success small fw-semibold" style="display: none;">
                         <i class="fa-solid fa-circle-check me-1"></i> Cảm ơn bạn đã đóng góp phản hồi!
                     </div>
@@ -225,7 +271,7 @@
                 <!-- PLACEHOLDER KHI CHƯA CÓ KẾT QUẢ -->
                 <div id="noDataPlaceholder" class="text-center py-5 text-muted">
                     <i class="fa-solid fa-chart-simple fs-1 mb-3 opacity-50"></i>
-                    <p class="mb-0">Vui lòng kéo thả hoặc chọn ảnh để xem kết quả phân tích AI.</p>
+                    <p class="mb-0">Vui lòng tải ảnh lên hoặc bật chế độ Giám Sát Webcam để bắt đầu.</p>
                 </div>
 
             </div>
@@ -246,15 +292,15 @@
             </div>
             <div class="modal-body p-4">
                 <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-bullseye me-2"></i>Mục tiêu ứng dụng</h6>
-                <p class="text-muted">StudyCheck AI hỗ trợ phát hiện tư thế ngồi học để giảm thiểu nguy cơ cong vẹo cột sống và cận thị ở học sinh, tích hợp cơ chế cảnh báo chưa chắc chắn và thu thập phản hồi từ người dùng.</p>
+                <p class="text-muted">StudyCheck AI tích hợp tính năng tự động chụp webcam định kỳ, phân tích tư thế ngồi học liên tục và chỉ đưa ra cảnh báo nhắc nhở khi phát hiện học sinh duy trì tư thế sai trong một khoảng thời gian đáng kể, giúp hạn chế phiền toái và tối ưu hóa sức khỏe cột sống học đường.</p>
 
                 <hr class="my-3">
 
                 <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-microchip me-2"></i>Công nghệ sử dụng</h6>
                 <ul class="text-muted mb-3">
-                    <li><strong>Mô hình AI:</strong> ResNet50 đạt độ chính xác 92.04% trên tập test.</li>
-                    <li><strong>Backend:</strong> Python, TensorFlow, Flask API (Hỗ trợ lưu Hard Cases).</li>
-                    <li><strong>Frontend:</strong> HTML5, Bootstrap 5, Chart.js Dashboard.</li>
+                    <li><strong>Mô hình AI:</strong> ResNet50 (Fine-tuned cho bài toán phân loại tư thế).</li>
+                    <li><strong>Backend:</strong> Flask API hỗ trợ cơ chế thu thập Hard Cases.</li>
+                    <li><strong>Frontend:</strong> HTML5 Video Stream, Bootstrap 5, Chart.js.</li>
                 </ul>
             </div>
             <div class="modal-footer bg-light">
@@ -271,6 +317,8 @@
     const dropzone = document.getElementById('dropzone');
     const imageInput = document.getElementById('imageInput');
     const imagePreview = document.getElementById('imagePreview');
+    const webcamVideo = document.getElementById('webcamVideo');
+    const snapshotCanvas = document.getElementById('snapshotCanvas');
     const placeholderText = document.getElementById('placeholderText');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
@@ -285,6 +333,8 @@
     
     const feedbackContainer = document.getElementById('feedbackContainer');
     const feedbackThanks = document.getElementById('feedbackThanks');
+    const warningCounterBox = document.getElementById('warningCounterBox');
+    const badCountSpan = document.getElementById('badCount');
     
     const noDataPlaceholder = document.getElementById('noDataPlaceholder');
     const chartContainer = document.getElementById('chartContainer');
@@ -295,7 +345,89 @@
     let currentRawLabel = "";
     let currentConfidence = 0;
 
-    // --- SỰ KIỆN KÉO THẢ (DRAG & DROP) ---
+    // Biến điều khiển Webcam & Bộ đếm sai liên tục
+    let webcamStream = null;
+    let monitoringTimer = null;
+    let consecutiveBadCount = 0;
+
+    function switchMode(mode) {
+        stopWebcamMonitoring();
+        resetUI();
+        if (mode === 'image') {
+            document.getElementById('imageUploadSection').style.display = 'block';
+            document.getElementById('webcamSection').style.display = 'none';
+            imagePreview.style.display = 'none';
+            webcamVideo.style.display = 'none';
+        } else {
+            document.getElementById('imageUploadSection').style.display = 'none';
+            document.getElementById('webcamSection').style.display = 'block';
+            imagePreview.style.display = 'none';
+            webcamVideo.style.display = 'block';
+            initWebcamStream();
+        }
+    }
+
+    async function initWebcamStream() {
+        try {
+            webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            webcamVideo.srcObject = webcamStream;
+            placeholderText.style.display = 'none';
+            updateStatus('Webcam Ready', 'bg-info', 'fa-video', 'Đã kết nối webcam. Nhấn "Bắt đầu giám sát tự động".');
+        } catch (err) {
+            console.error(err);
+            showError('Không thể truy cập Webcam! Hãy kiểm tra quyền cấp phép của trình duyệt.');
+            updateStatus('Lỗi Webcam', 'bg-danger', 'fa-triangle-exclamation');
+        }
+    }
+
+    function startWebcamMonitoring() {
+        if (!webcamStream) {
+            alert('Webcam chưa sẵn sàng!');
+            return;
+        }
+        document.getElementById('startWebcamBtn').style.display = 'none';
+        document.getElementById('stopWebcamBtn').style.display = 'inline-block';
+        updateStatus('Monitoring', 'bg-warning text-dark', 'fa-spinner fa-spin', 'Đang giám sát tư thế tự động qua Webcam...');
+        
+        consecutiveBadCount = 0;
+        const intervalTime = parseInt(document.getElementById('intervalSelect').value);
+
+        // Chụp và phân tích định kỳ
+        monitoringTimer = setInterval(() => {
+            captureAndPredictWebcam();
+        }, intervalTime);
+    }
+
+    function stopWebcamMonitoring() {
+        if (monitoringTimer) {
+            clearInterval(monitoringTimer);
+            monitoringTimer = null;
+        }
+        if (webcamStream) {
+            webcamStream.getTracks().forEach(track => track.stop());
+            webcamStream = null;
+        }
+        document.getElementById('startWebcamBtn').style.display = 'inline-block';
+        document.getElementById('stopWebcamBtn').style.display = 'none';
+        webcamVideo.style.display = 'none';
+    }
+
+    function captureAndPredictWebcam() {
+        if (!webcamVideo.srcObject) return;
+
+        snapshotCanvas.width = webcamVideo.videoWidth || 640;
+        snapshotCanvas.height = webcamVideo.videoHeight || 480;
+        const ctx = snapshotCanvas.getContext('2d');
+        ctx.drawImage(webcamVideo, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+
+        snapshotCanvas.toBlob((blob) => {
+            const file = new File([blob], "webcam_snapshot.jpg", { type: "image/jpeg" });
+            currentFile = file;
+            uploadAndPredict(file, true);
+        }, 'image/jpeg', 0.85);
+    }
+
+    // --- SỰ KIỆN KÉO THẢ ẢNH ---
     ['dragenter', 'dragover'].forEach(eventName => {
         dropzone.addEventListener(eventName, (e) => {
             e.preventDefault();
@@ -315,15 +447,11 @@
     dropzone.addEventListener('drop', (e) => {
         const dt = e.dataTransfer;
         const files = dt.files;
-        if (files.length > 0) {
-            handleFileSelect(files[0]);
-        }
+        if (files.length > 0) handleFileSelect(files[0]);
     });
 
     imageInput.addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0]);
-        }
+        if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
     });
 
     function handleFileSelect(file) {
@@ -345,7 +473,7 @@
         }
         reader.readAsDataURL(file);
 
-        uploadAndPredict(file);
+        uploadAndPredict(file, false);
     }
 
     resetBtn.addEventListener('click', function() {
@@ -359,11 +487,12 @@
         resultSummary.style.display = 'none';
         chartContainer.style.display = 'none';
         feedbackThanks.style.display = 'none';
+        warningCounterBox.style.display = 'none';
         noDataPlaceholder.style.display = 'block';
         imagePreview.style.display = 'none';
-        placeholderText.style.display = 'inline';
         resetBtn.style.display = 'none';
-        updateStatus('Standby', 'bg-secondary', 'fa-clock', 'Kéo thả ảnh hoặc chọn tệp từ máy tính...');
+        consecutiveBadCount = 0;
+        updateStatus('Standby', 'bg-secondary', 'fa-clock', 'Sẵn sàng nhận diện...');
     }
 
     function updateStatus(badgeText, bgClass, iconClass, description) {
@@ -377,8 +506,10 @@
         errorAlert.style.display = 'block';
     }
 
-    function uploadAndPredict(file) {
-        updateStatus('Processing', 'bg-warning text-dark', 'fa-spinner fa-spin', 'Đang xử lý hình ảnh và truyền tới mô hình AI ResNet50...');
+    function uploadAndPredict(file, isWebcamMode) {
+        if (!isWebcamMode) {
+            updateStatus('Processing', 'bg-warning text-dark', 'fa-spinner fa-spin', 'Đang xử lý hình ảnh qua ResNet50...');
+        }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -395,8 +526,10 @@
         })
         .then(data => {
             if (data.success) {
-                updateStatus('Completed', 'bg-success', 'fa-circle-check', 'Phân tích thành công!');
-                
+                if (!isWebcamMode) {
+                    updateStatus('Completed', 'bg-success', 'fa-circle-check', 'Phân tích thành công!');
+                }
+
                 currentRawLabel = data.label_raw;
                 currentConfidence = data.confidence;
 
@@ -405,14 +538,25 @@
                 resultConfidence.innerText = `${data.confidence}%`;
                 confidenceBar.style.width = `${data.confidence}%`;
 
-                // Xử lý hiển thị cảnh báo khi chưa chắc chắn (dưới ngưỡng 75%)
-                if (data.is_uncertain) {
-                    confidenceBar.className = 'progress-bar bg-warning';
-                    resultLabel.className = 'fw-bold text-danger my-1';
-                } else if (data.confidence < 75) {
-                    confidenceBar.className = 'progress-bar bg-warning';
-                    resultLabel.className = 'fw-bold text-warning my-1';
+                // Kiểm tra tư thế đúng hay sai để áp dụng logic tích lũy cảnh báo
+                const isGoodPosture = (data.label_raw === 'goodposture');
+                const consecutiveLimit = parseInt(document.getElementById('consecutiveLimitSelect').value);
+
+                if (!isGoodPosture) {
+                    consecutiveBadCount++;
+                    warningCounterBox.style.display = 'block';
+                    badCountSpan.innerText = consecutiveBadCount;
+
+                    if (consecutiveBadCount >= consecutiveLimit) {
+                        confidenceBar.className = 'progress-bar bg-danger';
+                        resultLabel.className = 'fw-bold text-danger my-1';
+                    } else {
+                        confidenceBar.className = 'progress-bar bg-warning';
+                        resultLabel.className = 'fw-bold text-warning my-1';
+                    }
                 } else {
+                    consecutiveBadCount = 0;
+                    warningCounterBox.style.display = 'none';
                     confidenceBar.className = 'progress-bar bg-success';
                     resultLabel.className = 'fw-bold text-primary my-1';
                 }
@@ -430,8 +574,10 @@
         })
         .catch(err => {
             console.error(err);
-            updateStatus('Error', 'bg-danger', 'fa-circle-xmark', 'Đã xảy ra lỗi trong quá trình phân tích.');
-            showError(err.message);
+            if (!isWebcamMode) {
+                updateStatus('Error', 'bg-danger', 'fa-circle-xmark', 'Đã xảy ra lỗi phân tích.');
+                showError(err.message);
+            }
         });
     }
 
@@ -501,9 +647,7 @@
                         }
                     },
                     x: {
-                        ticks: {
-                            font: { size: 10 }
-                        }
+                        ticks: { font: { size: 10 } }
                     }
                 }
             }
