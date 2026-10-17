@@ -4,3 +4,5 @@
 ============================================================
 
 [2026-10-17 18:26:05] $ source /d/Downloads/ai/demo/.venv/Scripts/activate
+[2026-10-17 18:26:17] $ git add .
+[2026-10-17 18:26:32] warning: in the working copy of '.terminal-logs/terminal_bash_20261017_182605_m6njmx.log', LF will be replaced by CRLF the next time Git touches it

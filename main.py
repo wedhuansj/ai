@@ -9,7 +9,7 @@ from flask_cors import CORS
 app = Flask(__name__, template_folder=".")
 CORS(app)
 
-# 1. Khai báo danh sách nhãn chuẩn theo mô hình đã huấn luyện
+# 1. Khai báo danh sách nhãn chuẩn theo đúng thứ tự lúc train mô hình
 CLASS_NAMES = [
     'backwardbadposture',
     'forwardbadposture',

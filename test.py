@@ -12,26 +12,20 @@ if not os.path.exists(MODEL_PATH):
 model = tf.keras.models.load_model(MODEL_PATH)
 print("-> Đã tải mô hình ResNet50 thành công!")
 
-# Tự động xác định số lượng class đầu ra của mô hình để tránh lỗi Index Out of Range
+# Tự động xác định số lượng class đầu ra của mô hình
 num_model_classes = model.output_shape[-1]
 print(f"-> Số lượng đầu ra (classes) của mô hình: {num_model_classes}")
 
-# Dự phòng danh sách nhãn đầy đủ (bao gồm cả 8 nhãn cũ / biến thể trên Roboflow)
-# Đảm bảo thứ tự khớp hoàn toàn với lúc train hoặc ánh xạ an toàn theo index
+# Danh sách 3 nhãn chuẩn khớp hoàn toàn với lúc train mô hình thực tế
 CLASS_NAMES = [
     'backwardbadposture', 
-    'backwardbadposture forwardbadposture', 
-    'backwardbadposture goodposture', 
     'forwardbadposture', 
-    'forwardbadposture goodposture', 
-    'goodposture',
-    'leaning_backward',
-    'leaning_forward'
-][:num_model_classes] # Cắt lấy đúng số lượng mà model hỗ trợ
+    'goodposture'
+][:num_model_classes]
 
 print(f"-> Danh sách nhãn đồng bộ: {CLASS_NAMES}")
 
-# 2. Mở rộng từ điển ánh xạ COCO để bao quát trọn vẹn 8 nhãn cũ và mới
+# 2. Từ điển ánh xạ nhãn COCO sang nhãn mô hình
 COCO_TO_MODEL_MAP = {
     'leaning_backward': 'backwardbadposture',
     'leaning_forward': 'forwardbadposture',
@@ -65,7 +59,7 @@ for ann in coco_data['annotations']:
 total_images = 0
 correct_predictions = 0
 
-print("\n--- BẮT ĐẦU ĐÁNH GIÁ (ĐÃ BỔ SUNG ĐỦ NHÃN) ---")
+print("\n--- BẮT ĐẦU ĐÁNH GIÁ (TESTING) ---")
 
 for img_id, file_name in images_dict.items():
     if img_id not in image_to_cat:
@@ -82,17 +76,15 @@ for img_id, file_name in images_dict.items():
         
     total_images += 1
     
-    # Tiền xử lý ảnh về kích thước 224x224 chuẩn ResNet50
+    # Tiền xử lý ảnh về kích thước 224x224 chuẩn đầu vào mô hình
     img = load_img(img_path, target_size=(224, 224))
     img_array = img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
-    img_array = tf.keras.applications.resnet50.preprocess_input(img_array)
     
     # Dự đoán
     preds = model.predict(img_array, verbose=0)[0]
     pred_idx = np.argmax(preds)
     
-    # Đảm bảo index dự đoán không bao giờ vượt quá kích thước mảng nhãn
     if pred_idx < len(CLASS_NAMES):
         predicted_label = CLASS_NAMES[pred_idx]
     else:
